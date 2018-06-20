@@ -21,6 +21,7 @@ def _find_last_page(first_page, max_len = None):
         last_page_num = int(re.search("\d+$", last_page_num).group())
     else:
         temp_page_list = first_page.find_all("a", string = re.compile("^\d+$"))
+        temp_page_list = [page for page in temp_page_list if page["href"].startswith("thread")]
         if len(temp_page_list) > 0:
             last_page_num = max([int(x.get_text()) for x in temp_page_list])
         else:
@@ -34,7 +35,7 @@ def _find_last_page(first_page, max_len = None):
 def _get_threads(board_id, max_len = None):
     url = "http://forum.mods.de/bb/board.php?BID="+str(board_id)
     first_page = _get_page(url)
-    last_page_num = _find_last_page(first_page)
+    last_page_num = _find_last_page(first_page, max_len)
 
     #get all threads on all pages#
     page_link_list = [url+"&page="+str(i) for i in range(1, last_page_num+1)]
