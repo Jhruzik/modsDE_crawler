@@ -46,6 +46,10 @@ master_data = master_data[["board",
 
 #export data#
 now = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+
+if not os.path.isdir(os.path.join(os.getcwd(),"Results")):
+    os.makedirs(os.path.join(os.getcwd(),"Results"))
+
 write_path = os.path.join(os.getcwd(),"Results", "boardid"+
                           str(board_id)+"_"+now+".csv")
 master_data.to_csv(write_path, sep = ";", index = False, encoding = "utf-8")
