@@ -21,13 +21,16 @@ def _find_last_page(first_page, max_len = None):
         last_page_num = int(re.search("\d+$", last_page_num).group())
     else:
         temp_page_list = first_page.find_all("a", string = re.compile("^\d+$"))
-        last_page_num = max([int(x.get_text()) for x in temp_page_list])
+        if len(temp_page_list) > 0:
+            last_page_num = max([int(x.get_text()) for x in temp_page_list])
+        else:
+            last_page_num = 1
     if isinstance(max_len, int) and max_len < last_page_num:
         last_page_num = max_len
     return last_page_num
 
 
-#crawler for single board#
+#parse board#
 def _get_threads(board_id, max_len = None):
     url = "http://forum.mods.de/bb/board.php?BID="+str(board_id)
     first_page = _get_page(url)
@@ -61,8 +64,11 @@ def _get_thread_pages(thread_link):
 #parse posts#
 def _get_posts(page_link):
     page = _get_page(page_link)
-    current_page_num = page.find("b", string = re.compile("\[\d+\]")).get_text()
-    current_page_num = re.search("\d+", current_page_num).group()
+    if page.find("b", string = re.compile("\[\d+\]")) is not None:
+        current_page_num = page.find("b", string = re.compile("\[\d+\]")).get_text()
+        current_page_num = re.search("\d+", current_page_num).group()
+    else:
+        current_page_num = 1
     
     #get all posts
     posts = page.find_all("tr", {"username": True})
@@ -81,9 +87,12 @@ def _get_posts(page_link):
     quoted_user_list = []
     for post in posts:
         if post.find("td", {"class": "quote"}) is not None:
-            quote_text = post.find("td", {"class": "quote"}).get_text()
-            quoted_user = re.search("Zitat von (.*)\n", quote_text).group(1)
-            quoted_user_list.append(quoted_user.strip())
+            try:
+                quote_text = post.find("td", {"class": "quote"}).get_text()
+                quoted_user = re.search("Zitat von (.*)\n", quote_text).group(1)
+                quoted_user_list.append(quoted_user.strip())
+            except Exception:
+                quoted_user_list.append(None)
         else:
             quoted_user_list.append(None)
     
@@ -103,9 +112,3 @@ def _get_posts(page_link):
                          "text":post_text_list})
     
     return page_df
-
-
-
-######User Functions (external)######
-    
-#TO-DO#
