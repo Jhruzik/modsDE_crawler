@@ -15,13 +15,16 @@ def _get_page(url):
     page = BeautifulSoup(page.text, "lxml")
     return page
     
-def _find_last_page(first_page, max_len = None):
+def _find_last_page(first_page, level, max_len = None):
     if first_page.find("a", string = "letzte »") is not None:
         last_page_num = first_page.find("a", string = "letzte »")["href"]
         last_page_num = int(re.search("\d+$", last_page_num).group())
     else:
         temp_page_list = first_page.find_all("a", string = re.compile("^\d+$"))
-        temp_page_list = [page for page in temp_page_list if page["href"].startswith("thread")]
+        if level == "board":
+            temp_page_list = [page for page in temp_page_list if page["href"].startswith("board")]
+        elif level == "thread":
+            temp_page_list = [page for page in temp_page_list if page["href"].startswith("thread")]
         if len(temp_page_list) > 0:
             last_page_num = max([int(x.get_text()) for x in temp_page_list])
         else:
@@ -35,12 +38,16 @@ def _find_last_page(first_page, max_len = None):
 def _get_threads(board_id, max_len = None):
     url = "http://forum.mods.de/bb/board.php?BID="+str(board_id)
     first_page = _get_page(url)
-    last_page_num = _find_last_page(first_page, max_len)
+    last_page_num = _find_last_page(first_page, "board", max_len)
 
     #get all threads on all pages#
     page_link_list = [url+"&page="+str(i) for i in range(1, last_page_num+1)]
     thread_link_list = []
+    i = 1
+    end = str(len(page_link_list))
     for link in page_link_list:
+        print("Collecting Threads on page "+str(i)+" of "+end)
+        i += 1
         temp_page = requests.get(link)
         temp_page = BeautifulSoup(temp_page.text, "lxml")
         temp_link_list = temp_page.find_all("tr", {"bgcolor":"#222E3A"})
@@ -55,7 +62,7 @@ def _get_threads(board_id, max_len = None):
 #parse threads#
 def _get_thread_pages(thread_link):
     first_page = _get_page(thread_link)
-    last_page_num = _find_last_page(first_page)
+    last_page_num = _find_last_page(first_page, "thread")
     
     #get all page links#
     page_link_list = [thread_link+"&page="+str(i) for i in range(1, last_page_num+1)]

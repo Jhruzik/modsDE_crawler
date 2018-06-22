@@ -25,10 +25,12 @@ temp_data = pd.DataFrame()
 master_data = pd.DataFrame()
 
 #walk through threads and collect data#
+i = 1
 for thread in threads:
+    print("Parsing Thread #"+str(i)+"of "+str(len(threads)))
+    i += 1
     pages = modsDE_parser._get_thread_pages(thread)
     for page in pages:
-        print("Parsing: "+page)
         temp_data = modsDE_parser._get_posts(page)
         temp_data["thread"] = thread
         temp_data["board"] = board_id
