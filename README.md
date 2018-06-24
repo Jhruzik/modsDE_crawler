@@ -5,9 +5,9 @@ With this crawler, you can get all the posts of a specific sub-board on http://f
 
 ### Installation
 You'll need to have **Python3** with the following dependencies on your machine:
-⋅⋅* Pandas
-⋅⋅* BeautifulSoup
-⋅⋅* numpy
+- Pandas
+- BeautifulSoup
+- numpy
 
 In general, I would advise you to install the Python distribution Anaconda which already has all of the software pre-installed.
 
@@ -17,11 +17,11 @@ You can find the board number within the url of a board. If you'd like to limit 
 
 ### Output
 While crawling, the crawler will print the current status and the remaining workload to the terminal. After finishing the process, you'll find a (new) folder within your program's directory called *Results*. This folder contains your finished job as a csv file. This file contains every single post with the following variables:
-⋅⋅* PostText: The post's original text, excluding text from quoted posts.
-⋅⋅* PostTime: The date and time when the post was published.
-⋅⋅* QuotedUser: If someone was quoted in this post, you'll find the name right here.
-⋅⋅* Thread: The link to the thread where the post was submitted to.
-⋅⋅* User: The original poster.
-⋅⋅* Board: The board's id.
+- PostText: The post's original text, excluding text from quoted posts.
+- PostTime: The date and time when the post was published.
+- QuotedUser: If someone was quoted in this post, you'll find the name right here.
+- Thread: The link to the thread where the post was submitted to.
+- User: The original poster.
+- Board: The board's id.
 
 Please note that a semicolon ";" was used as the field separator for the csv. Also, the data is encoded in utf-8.
