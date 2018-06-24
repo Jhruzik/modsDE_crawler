@@ -6,6 +6,7 @@ from pandas import DataFrame
 from bs4 import BeautifulSoup
 import requests
 import re
+from numpy import repeat
 
 ######Functions for Data Extraction (internal)######
 
@@ -111,12 +112,9 @@ def _get_posts(page_link):
         if post.table is not None:
             post.table.decompose()
         post_text_list.append(post.get_text())
+        
+    #repeat page number in list#
+    current_page_num_list = [current_page_num]*len(posts)
     
     #merge data into one data frame
-    page_df = DataFrame({"user":user_list,
-                         "post_time":datetime_list,
-                         "page":current_page_num,
-                         "quoted":quoted_user_list,
-                         "text":post_text_list})
-    
-    return page_df
+    return user_list, datetime_list, quoted_user_list, post_text_list, current_page_num_list
