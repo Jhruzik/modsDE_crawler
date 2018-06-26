@@ -14,6 +14,10 @@ now = datetime.now().strftime("%Y-%m-%d_%H%M%S")
 
 #read in command line arguments#
 sys_args_col = " ".join(sys.argv)
+allowed_params = re.compile("(--board_id=\d+|--max_len=\d+|--incremental)")
+
+if not all([re.search(allowed_params, x) for x in sys.argv[1:]]):
+    raise ValueError("One of your arguments is unkown. Please consult the documentation.")
 
 board_id = re.search("(?<=--board_id=)\d+", sys_args_col).group()
 max_len = re.search("(?<=--max_len=)\d+", sys_args_col)
@@ -38,6 +42,14 @@ quoted_user_list = []
 post_text_list = []
 thread_list = []
 
+#create error log
+if not os.path.isdir(os.path.join(os.getcwd(),"ErrorLog")):
+    os.makedirs(os.path.join(os.getcwd(),"ErrorLog"))
+
+errorlog = open(os.path.join(os.getcwd(),"ErrorLog", "ErrorLog"+now+".txt"), 
+                mode = "a", encoding = "utf-8")
+
+
 #create temporary folder for incremental crawl
 if incremental:
     incremental_resultpath = os.path.join(os.getcwd(),"Results", 
@@ -49,13 +61,12 @@ if incremental:
 
 #walk through threads and collect data#
 i = 1
-try:
+
+for thread in threads:
+    print("Parsing Thread #"+str(i)+"of "+str(len(threads)))
     
-    for thread in threads:
-        print("Parsing Thread #"+str(i)+"of "+str(len(threads)))
-        i += 1
+    try:
         pages = modsDE_parser._get_thread_pages(thread)
-        
         if incremental == False:
             for page in pages:
                 temp_data = modsDE_parser._get_posts(page)
@@ -65,7 +76,7 @@ try:
                 for x in temp_data[3]: post_text_list.append(x)
                 for x in temp_data[4]: current_page_list.append(x)
                 for x in [thread]*len(temp_data[0]): thread_list.append(x)
-        
+
         else:
             incremental_csv_path = os.path.join(incremental_resultpath,
                                                 "Thread"+str(i)+".csv")
@@ -82,15 +93,20 @@ try:
                                           "PostTime":datetime_list,
                                           "QuotedUser":quoted_user_list,
                                           "PostText":post_text_list})
-            incr_data = incr_data.append(temp_data)
+                incr_data = incr_data.append(temp_data)
+            
             incr_data["Board"] = board_id
             incr_data.to_csv(incremental_csv_path, 
                              sep = ";", index = False, encoding = "utf-8")
+            
+        i += 1
 
-        
-except Exception:
-    print("Error while handling Thread "+thread+". Will skip this Thread.")
-    i += 1
+
+    except Exception:
+        print("Error while handling Thread "+thread+". Will skip this Thread.")
+        errorlog.write("Error parsing Thread: "+thread+"\n")
+        i += 1
+        pass
 
             
 #Export final data if not incremental#
@@ -112,3 +128,6 @@ if incremental == False:
                               str(board_id)+"_"+now+".csv")
     
     master_data.to_csv(write_path, sep = ";", index = False, encoding = "utf-8")
+    
+#close error log
+errorlog.close()

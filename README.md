@@ -24,4 +24,6 @@ While crawling, the crawler will print the current status and the remaining work
 - User: The original poster.
 - Board: The board's id.
 
+The folder *ErrorLog* will contain a log for every job. If there are no errors, the .txt will be empty.
+
 Please note that a semicolon ";" was used as the field separator for the csv. Also, the data is encoded in utf-8.
