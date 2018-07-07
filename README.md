@@ -1,29 +1,27 @@
 # Crawling the boards on http://forum.mods.de/bb/
 
 ### Description
-With this crawler, you can get all the posts of a specific sub-board on http://forum.mods.de/bb/ in a csv file. Optionally, you could limit the search to a specific maximum depth (number of pages).
+With this crawler, you can get all the posts of a specific sub-board on http://forum.mods.de/bb/ in csv files. Several options are included to adjust the crawler's behavior.
 
 ### Installation
 You'll need to have **Python3** with the following dependencies on your machine:
 - Pandas
 - BeautifulSoup
 - numpy
+- several other modules which should come with a standard Python installation.
 
 In general, I would advise you to install the Python distribution Anaconda which already has all of the software pre-installed.
 
 ### Usage
-Copy the source files into a directory, open up a terminal (e.g. Bash in GNU/Linux or cmd in Windows), and cd into this directory. You can now start the script *crawl_board.py* from your console. However, note that the program takes three arguments: one obligatory and two optional. After calling the script within your console, enter `--board_id=` and the number of the board you'd like to crawl. If you would like to crawl board number 14 (codnation.de), the command would look like this: `python crawl_board.py --board_id=99`.
-You can find the board number within the url of a board. If you'd like to limit the crawl to a certain number of pages enter this number after the `--max_len=`. For example, if we want to crawl the first 100 pages of board number 14, we would enter the following syntax into our terminal: `python crawl_board.py --board_id=14 --max_len100`. Finally you could tell python to crawl every thread by itself by `--incremental`. This will create a folder within *Results* for your job and put every thread into its own csv. If you have a very extensive crawl job this will prevent your machine from running out of memory.
+Copy the source files into a directory, open up a terminal (e.g. Bash in GNU/Linux or cmd in Windows), and cd into this directory. You can now start the script *crawl_board.py* from your console. Note that the program takes several arguments: Enter `--board_id=` and the number of the board you'd like to crawl. 
+To speed up the crawling, multi-threading is used. That means multiple instances (called spiders) will crawl the desired board at the same time. You must set the number of spiders with `--spiders=`. However, you should be careful how many spiders you use since the crawl must not generate too much traffic. Else, you might get blocked by the server. `--board_id=` and `--spiders=` are obligatory arguments and represent the bare minimum for a job to start. For example, if you want to crawl board number 99 (codnation) with four spiders, the code would look like this: `python crawl_board.py --board_id=99 --spiders=4`. 
+If you want to make sure that you don't send too many requests to the server, you can use both `--pause_breaks=` and `--pause_duration=`. With those commands, you can tell your spiders to  rest for a certain amount of seconds after crawling a certain amount of threads. `--pause_breaks=` will set the number of threads to crawl before resting for a certain amount of seconds specified in `--pause_duration=`. Note that breaks might not occur due to concurrency. If you decide to abort your crawl or your jobs stops for some other reason, you can always continue a once started job with the `--continue_job=` command. This option becomes extremely valuable when you have jobs that you want to split across multiple sessions on your computer. After running the first job, there will be a folder called *Jobs* that contains all the jobs you ran in the form of board_BOARDID_YYYY-MM-DD_HHMMSS. Assume you want to continue the job board_16_2018-01-01_220000, here's how the syntax would look like: `python crawl_board.py --continue_job=board_16_2018-01-01_220000`.
 
 ### Output
-While crawling, the crawler will print the current status and the remaining workload to the terminal. After finishing the process, you'll find a (new) folder within your program's directory called *Results*. This folder contains your finished job as a csv file. This file contains every single post with the following variables:
-- PostText: The post's original text, excluding text from quoted posts.
-- PostTime: The date and time when the post was published.
-- QuotedUser: If someone was quoted in this post, you'll find the name right here.
-- Thread: The link to the thread where the post was submitted to.
-- User: The original poster.
-- Board: The board's id.
-
-The folder *ErrorLog* will contain a log for every job. If there are no errors, the .txt will be empty.
-
-Please note that a semicolon ";" was used as the field separator for the csv. Also, the data is encoded in utf-8.
+While crawling, the crawler will output how many threads have already been crawled in your current job. If you choose to continue a job, it will pick up where it left. If the number of threads passes the threshold defined in pause_breaks, the waiting time will be displayed. The data is saved for every page in every thread. Inside the folder Jobs/JOBNAME you will find different folders representing each thread. In every folder there will be one or multiple csv files representing the pages in a given thread. The following variables are included:
+- PostText (original post text, no quotes)
+- PostSite (site of post in thread)
+- PostTime (datetime of post in format DD.MM.YYYY HH:MM:SS)
+- Thread (thread id)
+- User (the user that published a given post)
+- UserQuoted (the last user that was quoted inside the post) 

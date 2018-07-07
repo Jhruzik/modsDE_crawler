@@ -71,13 +71,9 @@ def _get_thread_pages(thread_link):
     return page_link_list
 
 #parse posts#
-def _get_posts(page_link):
-    page = _get_page(page_link)
-    if page.find("b", string = re.compile("\[\d+\]")) is not None:
-        current_page_num = page.find("b", string = re.compile("\[\d+\]")).get_text()
-        current_page_num = re.search("\d+", current_page_num).group()
-    else:
-        current_page_num = 1
+def _get_posts(page):
+      
+    page = _get_page(page)
     
     #get all posts
     posts = page.find_all("tr", {"username": True})
@@ -112,9 +108,7 @@ def _get_posts(page_link):
         if post.table is not None:
             post.table.decompose()
         post_text_list.append(post.get_text())
-        
-    #repeat page number in list#
-    current_page_num_list = [current_page_num]*len(posts)
     
     #merge data into one data frame
-    return user_list, datetime_list, quoted_user_list, post_text_list, current_page_num_list
+    return user_list, datetime_list, quoted_user_list, post_text_list
+
