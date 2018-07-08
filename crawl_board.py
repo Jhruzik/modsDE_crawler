@@ -32,9 +32,12 @@ pause_breaks = re.search("(?<=--pause_breaks=)\d+", sys_args_col)
 if max_len is not None: max_len = max_len.group()
 if board_id is not None: board_id = board_id.group()
 if job_old is not None: job_old = job_old.group()
-if spiders is not None: spiders = int(spiders.group())
 if pause_duration is not None: pause_duration = int(pause_duration.group())
 if pause_breaks is not None: pause_breaks = int(pause_breaks.group())
+if spiders is not None: 
+    spiders = int(spiders.group())
+else:
+    spiders = 1
 
 
 #create folders for job#
@@ -61,6 +64,7 @@ if job_old is None:
     with open(os.path.join(log_path, "jobs_total.txt"), 
               mode = "w", encoding = "utf-8") as log_total:
         log_total.write('\n'.join(threads))
+    total_length = len(threads)
 else:
     with open(os.path.join(log_path, "jobs_total.txt"), 
               mode = "r", encoding = "utf-8") as log_total:
@@ -69,16 +73,20 @@ else:
               mode = "r", encoding = "utf-8") as threads_done:
         threads_done = [thread.strip() for thread in threads_done.readlines()]
     threads = [thread for thread in threads_total if thread not in threads_done]
+    total_length = len(threads_total)
 
 
 #define crawler#
 def crawler(threads):
     
+    global total_length
+    total_length = str(total_length)
+    
     for thread in threads:
         try:
             
             thread_counter = len(os.listdir(result_path))
-            print("Crawled: "+str(thread_counter))
+            print("Crawled: "+str(thread_counter)+" of "+total_length)
             
             if pause_breaks is not None and thread_counter%pause_breaks == 0 and thread_counter > 0:
                 print("Timeout pause breakpoint reached. Will pause for "+
@@ -117,27 +125,30 @@ def crawler(threads):
         
 
 #init multi-threading#
-spider_list = []
-spider_num = round(len(threads)/int(spiders))
-
-spider_borders = list(range(0, len(threads), spider_num))
-border_list = []
-
-for i in range(0, len(spider_borders)):
-    try:
-        border_list.append((spider_borders[i], spider_borders[i+1]))
-    except IndexError:
-        break
-
-if border_list[-1][1] != len(threads):
-    border_list.append((border_list[-1][1], len(threads)))
+if spiders > 1:
+    spider_list = []
+    spider_num = round(len(threads)/int(spiders))
     
-for border in border_list:
-    spider = threading.Thread(target = crawler, args=((threads[border[0]:border[1]],)))
-    spider_list.append(spider)
-    spider.start()
+    spider_borders = list(range(0, len(threads), spider_num))
+    border_list = []
     
-for spider in spider_list:
-    spider.join()
+    for i in range(0, len(spider_borders)):
+        try:
+            border_list.append((spider_borders[i], spider_borders[i+1]))
+        except IndexError:
+            break
     
-print("Done")
+    if border_list[-1][1] != len(threads):
+        border_list.append((border_list[-1][1], len(threads)))
+        
+    for border in border_list:
+        spider = threading.Thread(target = crawler, args=((threads[border[0]:border[1]],)))
+        spider_list.append(spider)
+        spider.start()
+        
+    for spider in spider_list:
+        spider.join()
+        
+    print("Done")
+else:
+    crawler(threads)
