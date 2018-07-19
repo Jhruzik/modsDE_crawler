@@ -25,7 +25,7 @@ def _find_last_page(first_page, level, max_len = None):
         if level == "board":
             temp_page_list = [page for page in temp_page_list if page["href"].startswith("board")]
         elif level == "thread":
-            temp_page_list = [page for page in temp_page_list if page["href"].startswith("thread")]
+            temp_page_list = [page for page in temp_page_list if "page=" in page["href"]]
         if len(temp_page_list) > 0:
             last_page_num = max([int(x.get_text()) for x in temp_page_list])
         else:
