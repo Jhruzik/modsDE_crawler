@@ -29,3 +29,6 @@ While crawling, the crawler will output how many threads have already been crawl
 - Thread (thread id)
 - User (the user that published a given post)
 - UserQuoted (the last user that was quoted inside the post) 
+
+### Use Case
+You can find a comprehensive analysis of the Public Offtopic [pOT] sub-board at: https://s3.eu-central-1.amazonaws.com/hruzik89/pot_data/report.html
