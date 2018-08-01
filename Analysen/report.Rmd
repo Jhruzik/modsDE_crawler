@@ -1,0 +1,105 @@
+---
+output: 
+  html_document: 
+    fig_height: 6
+    fig_width: 10
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+source("setup.R")
+source("wrangle.R")
+```
+
+
+#Datenanylse des pOT
+Datum: `r Sys.Date()`<br/>
+Autor: Joshua Hruzik <joshua.hruzik@gmail.com><br/>
+Zeitraum: `r paste0(min(pot_data$PostDate), " bis ", max(pot_data$PostDate))`<br/>
+Posts: `r format(nrow(pot_data), big.mark = ".", scientific = FALSE, decimal.mark = ",")`<br/>
+User: `r format(length(unique(pot_data$User)), big.mark = ".", scientific = FALSE, decimal.mark = ",")`<br/>
+Quelle: https://s3.eu-central-1.amazonaws.com/hruzik89/pot_data/pot.csv<br/>
+
+##Aktivität
+
+####Posts pro Tag
+```{r post_day}
+post_day <- pot_data %>% filter(PostDate < "2018-07-10") %>% count(PostDate)
+ggplot(post_day, aes(x = PostDate, y = n))+geom_line(alpha = 0.5)+geom_smooth(method = "loess")+labs(x = "Datum", y = "Posts")
+```
+
+####Aktive User pro Tag
+```{r users_day}
+users_day <- pot_data %>% group_by(PostDate) %>% summarise(users = n_distinct(User)) %>% filter(PostDate < "2018-07-10")
+ggplot(users_day, aes(x = PostDate, y = users))+geom_line(alpha = 0.5)+geom_smooth(method = "loess")+labs(x = "Datum", y = "User")
+```
+
+
+
+####Posts pro Wochentag
+```{r actvity_wday}
+post_wkday <- pot_data %>% count(PostDate, Wkday)
+ggplot(post_wkday, aes(x = Wkday, y = (n)))+geom_boxplot()+labs(x = "Wochentag", y = "Posts")
+```
+
+####Posts pro Wochentag/Tageszeit
+```{r activity_time}
+post_time <- pot_data %>% count(Wkday, Hour)
+ggplot(post_time, aes(x = Hour, y = Wkday))+geom_tile(aes(fill = n))+theme_minimal()+scale_fill_distiller("Posts", palette = 1, direction = 1)+labs(x = "Uhrzeit", y = "Wochentag")
+```
+
+####Top-20 der aktivsten Nutzer
+```{r active_users}
+most_active_user_overall <- pot_data %>% count(User) %>% arrange(-n) %>% rename(Posts = n)
+most_active_user_overall[1:20,] %>% ggplot(aes(x = reorder(User, Posts), y = Posts))+geom_bar(stat = "identity", fill = "#355062")+coord_flip()+labs(x = "User", y = "Posts")
+```
+
+```{r user_activity_data, warning = FALSE, message = FALSE}
+most_active_user_overall %>% DT::datatable()
+```
+
+
+####Posts der Top-10 aktivsten User pro Jahr
+```{r active_users_years, fig.height=7}
+most_active_user_year <- pot_data %>% count(Year, User) %>% filter(User %in% most_active_user_overall$User[1:10])
+ggplot(most_active_user_year, aes(x = User, y = n))+geom_bar(stat = "identity", fill = "#355062")+coord_flip()+facet_wrap(~Year)+labs(y = "Posts", x = NULL)
+```
+
+##Sentiment
+
+####Mittelwert des Sentiments aller Posts pro Tag
+```{r sentiment_day}
+day_sentiment_data <- as_tibble(list("date" = unique(pot_data$PostDate)))
+
+get_day_sentiment <- function(date_input) {
+  
+  result <- pot_data %>% filter(PostDate == date_input) %>% select(PostId, PostText_clean) %>% unnest_tokens("word", PostText_clean) %>% left_join(sentiment, by = c("word" = "Word_lower")) %>% filter(!is.na(Weight)) %>% group_by(PostId) %>% summarise(sentiment = sum(Weight)) %>% ungroup() %>% summarise(sentiment = mean(sentiment)) %>% as.numeric()
+  return(result[1])
+  
+}
+
+day_sentiment_data$sentiment <- sapply(day_sentiment_data$date, get_day_sentiment)
+day_sentiment_data %>% ggplot(aes(x = date, y = sentiment))+geom_line(alpha = 0.5)+geom_smooth(method = "loess")+labs(x = "Datum", y = "Sentiment")
+```
+
+####Positivste und negativste User (der Top-100)
+```{r sentiment_user}
+user_sentiment_data <- as_tibble(list("User" = most_active_user_overall$User[1:100]))
+
+get_user_sentiment <- function(user_input) {
+  
+  result <- pot_data %>% filter(User == user_input) %>% select(PostId, PostText_clean) %>% unnest_tokens("word", PostText_clean) %>% left_join(sentiment, by = c("word" = "Word_lower")) %>% filter(!is.na(Weight)) %>% group_by(PostId) %>% summarise(sentiment = sum(Weight)) %>% ungroup() %>% summarise(sentiment = mean(sentiment)) %>% as.numeric()
+  return(result[1])
+  
+}
+
+user_sentiment_data$sentiment <- sapply(user_sentiment_data$User, get_user_sentiment)
+user_sentiment_data <- user_sentiment_data %>% arrange(-sentiment)
+user_sentiment_data <- user_sentiment_data %>% head(user_sentiment_data, n = 10) %>% bind_rows(tail(user_sentiment_data, n = 10)) %>% mutate(level = ifelse(sentiment > 0, "positiv", "negativ"))
+max_sentiment <- round(max(abs(user_sentiment_data$sentiment)), 3)
+
+
+user_sentiment_data %>% ggplot(aes(x = reorder(User, sentiment), y = sentiment, fill = level))+geom_bar(stat = "identity")+coord_flip()+scale_y_continuous(limits = c(max_sentiment*-1, max_sentiment))+scale_fill_manual(values = c("positiv" = "#96ceb4", "negativ" = "#ff6f69"))+labs(x = "User", y = "Mittelwert Sentiment pro Post")+guides(fill=FALSE)
+```
+
